@@ -1,0 +1,111 @@
+---
+title: "RespirationRates_Analysis_F2s"
+author: "Samuel Gurr"
+date: "2023-03-16"
+output: pdf_document
+---
+
+```{r setup, include= FALSE, echo = FALSE}
+
+# LOAD PACKAGES :::::::::::::::::::::::::::::::::::::::::::::::::::::::
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(lme4)
+library(lmerTest)
+library(performance)
+library(car)
+library(kableExtra)
+library(pander)
+library(data.table)
+library(Rmisc)
+library(devtools)
+library(ggpubr)
+library(SciViews)
+
+# SET WORKING DIRECTORY :::::::::::::::::::::::::::::::::::::::::::::::
+knitr::opts_knit$set(root.dir = "C:/Users/samjg/Documents/Github_repositories/Airradians_parentXoffspring_OA/RAnalysis")
+# setwd("C:/Users/samjg/Documents/Github_repositories/Airradians_parentXoffspring_OA/RAnalysis") # personal computer
+
+
+```
+
+```{r}
+# LOAD DATA :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+RR_master <- read.csv(file="C:/Users/samjg/Documents/Github_repositories/Airradians_parentXoffspring_OA/RAnalysis/Output/Respiration/RR_calc_raw.csv", header=T)
+
+```
+
+# F2 DATA ANALYSIS
+
+### Summary tables
+
+```{r shell lengths at each timepoint, echo = FALSE}
+
+SumTable_treatment <- RR_master %>%  
+            summarySE(measurevar="resp_umol_hr_indiv", groupvars=c("Date","pCO2_parents", "pCO2_offspring")) %>% 
+            dplyr::arrange(resp_umol_hr_indiv)
+SumTable_treatment
+```
+
+
+# STANDARDIZE AND STATISTICAL ANALYSIS 
+
+
+``` {r, standardize & ANOVA stats,echo = FALSE, results='hide',message = FALSE, warning = FALSE}
+
+aov_mod <- aov(lm(resp_umol_hr_indiv~ pCO2_parents*pCO2_offspring, data = RR_master))
+shapiro.test(resid(aov_mod)) # 0.003548
+leveneTest(aov_mod) # 0.6297
+hist(resid(aov_mod)) # left skew
+
+
+aov_mod_SQRT <- aov(lm(sqrt(resp_umol_hr_indiv)~ pCO2_parents*pCO2_offspring, data = RR_master))
+shapiro.test(resid(aov_mod_SQRT)) # 0.7078
+leveneTest(aov_mod_SQRT) # 0.8791
+hist(resid(aov_mod_SQRT)) # left skew
+
+summary(aov_mod_SQRT)
+#                              Df    Sum Sq   Mean Sq F value Pr(>F)
+# pCO2_parents                 1 1.398e-05 1.398e-05   2.242  0.148
+# pCO2_offspring               2 2.810e-06 1.404e-06   0.225  0.800
+# pCO2_parents:pCO2_offspring  2 7.990e-06 3.994e-06   0.640  0.536
+
+```
+
+
+## BOXPLOTS by SHELL LENGTH (b factor = 2.18)
+
+```{r, by MM LENGTH,echo = FALSE, results='hide',message = FALSE, warning = FALSE}
+
+RR_master$pCO2_parents <- factor(RR_master$pCO2_parents, levels = c("500 uatm", "800 uatm"))
+RR_master$pCO2_offspring <- factor(RR_master$pCO2_offspring, levels = c("500 uatm", "800 uatm", "1200 uatm"))
+ 
+# PLOT
+BOXPLOT_Length_bfactor.MEAN <- RR_master %>% 
+  ggplot(aes(x = factor(pCO2_parents), 
+             y = resp_umol_hr_indiv, 
+             fill = pCO2_offspring)) +
+         geom_boxplot(alpha = 0.5, # color hue
+             width=0.6, # boxplot width
+             outlier.size=0, # make outliers small
+             position = position_dodge(preserve = "single")) + 
+         geom_point(pch = 19, 
+                    position = position_jitterdodge(0.01), 
+                    size=1) +
+         scale_fill_manual(values=c("forestgreen","orange", "purple")) +
+         theme_classic() + 
+         ggtitle("Respiration rates - Dhinge larvae") +
+         theme(axis.title.y=element_text(size=7),
+               axis.title.x=element_text(size=7),
+               axis.text.x=element_text(size=7)) +
+         #ylim(0, 0.2) +
+         stat_summary(fun.y=mean, 
+                      geom = "errorbar", 
+                      aes(ymax = ..y.., ymin = ..y..), 
+                      width = 0.6, 
+                      size=0.4, 
+                      linetype = "dashed", 
+                      position = position_dodge(preserve = "single")) +
+         facet_wrap(~Date, scales = "free") #, scales = "free)
+```
