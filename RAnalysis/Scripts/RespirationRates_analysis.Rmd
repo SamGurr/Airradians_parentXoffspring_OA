@@ -1,5 +1,5 @@
 ---
-title: "RespirationRates_Analysis_F2s"
+title: "RespirationRates_Analysis"
 author: "Samuel Gurr"
 date: "2023-03-16"
 output: pdf_document
@@ -36,7 +36,7 @@ RR_master <- read.csv(file="C:/Users/samjg/Documents/Github_repositories/Airradi
 
 ```
 
-# F2 DATA ANALYSIS
+# DATA ANALYSIS
 
 ### Summary tables
 
@@ -67,9 +67,12 @@ hist(resid(aov_mod_SQRT)) # left skew
 
 summary(aov_mod_SQRT)
 #                              Df    Sum Sq   Mean Sq F value Pr(>F)
-# pCO2_parents                 1 1.398e-05 1.398e-05   2.242  0.148
-# pCO2_offspring               2 2.810e-06 1.404e-06   0.225  0.800
-# pCO2_parents:pCO2_offspring  2 7.990e-06 3.994e-06   0.640  0.536
+# pCO2_parents                 1 1.495e-05 1.495e-05   1.809  0.192
+# pCO2_offspring               2 4.070e-06 2.036e-06   0.246  0.784
+# pCO2_parents:pCO2_offspring  2 1.206e-05 6.029e-06   0.729  0.493
+
+aov_mod_parents <- aov(lm(resp_umol_hr_indiv~ pCO2_parents, data = RR_master))
+summary(aov_mod_parents)
 
 ```
 
@@ -78,11 +81,12 @@ summary(aov_mod_SQRT)
 
 ```{r, by MM LENGTH,echo = FALSE, results='hide',message = FALSE, warning = FALSE}
 
-RR_master$pCO2_parents <- factor(RR_master$pCO2_parents, levels = c("500 uatm", "800 uatm"))
+RR_master$pCO2_parents   <- factor(RR_master$pCO2_parents, levels = c("500 uatm", "800 uatm"))
 RR_master$pCO2_offspring <- factor(RR_master$pCO2_offspring, levels = c("500 uatm", "800 uatm", "1200 uatm"))
  
 # PLOT
-BOXPLOT_Length_bfactor.MEAN <- RR_master %>% 
+BOXPLOT_Parentxoffsrping <- RR_master %>% 
+  dplyr::filter(!resp_umol_hr_indiv > 0.0002) %>% 
   ggplot(aes(x = factor(pCO2_parents), 
              y = resp_umol_hr_indiv, 
              fill = pCO2_offspring)) +
@@ -107,5 +111,39 @@ BOXPLOT_Length_bfactor.MEAN <- RR_master %>%
                       size=0.4, 
                       linetype = "dashed", 
                       position = position_dodge(preserve = "single")) +
-         facet_wrap(~Date, scales = "free") #, scales = "free)
+         facet_wrap(~pCO2_offspring) #, scales = "free)
+
+
+
+BOXPLOT_Parent <- RR_master %>% 
+  dplyr::filter(!resp_umol_hr_indiv > 0.0002) %>% 
+  ggplot(aes(x = factor(pCO2_parents), 
+             y = resp_umol_hr_indiv, 
+             fill = pCO2_parents)) +
+         geom_boxplot(alpha = 0.5, # color hue
+             width=0.6, # boxplot width
+             outlier.size=0, # make outliers small
+             position = position_dodge(preserve = "single")) + 
+         geom_point(pch = 19, 
+                    position = position_jitterdodge(0.01), 
+                    size=1) +
+         scale_fill_manual(values=c("forestgreen","orange")) +
+         theme_classic() + 
+         ggtitle("Respiration rates - Dhinge larvae") +
+         xlab("Respiration rates - Dhinge larvae") +
+         theme(axis.title.y=element_text(size=7),
+               axis.title.x=element_text(size=7),
+               axis.text.x=element_text(size=7)) +
+         #ylim(0, 0.2) +
+         stat_summary(fun.y=mean, 
+                      geom = "errorbar", 
+                      aes(ymax = ..y.., ymin = ..y..), 
+                      width = 0.6, 
+                      size=0.4, 
+                      linetype = "dashed", 
+                      position = position_dodge(preserve = "single")) 
+
+pdf(paste0(filename = "C:/Users/samjg/Documents/Github_repositories/Airradians_parentXoffspring_OA/RAnalysis/Output/Respiration/RR_Boxplots.pdf"), width = 8, height = 8)
+ggarrange(BOXPLOT_Parent, BOXPLOT_Parentxoffsrping, nrow = 2)
+dev.off()
 ```
