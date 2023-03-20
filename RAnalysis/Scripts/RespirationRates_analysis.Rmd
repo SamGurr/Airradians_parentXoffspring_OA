@@ -60,19 +60,35 @@ leveneTest(aov_mod) # 0.6297
 hist(resid(aov_mod)) # left skew
 
 
-aov_mod_SQRT <- aov(lm(sqrt(resp_umol_hr_indiv)~ pCO2_parents*pCO2_offspring, data = RR_master))
-shapiro.test(resid(aov_mod_SQRT)) # 0.7078
-leveneTest(aov_mod_SQRT) # 0.8791
-hist(resid(aov_mod_SQRT)) # left skew
+RR_master_outlierOM <- RR_master %>% dplyr::filter(!resp_umol_hr_indiv > 0.0002) 
+aov_mod_outlierOM <- aov(lm((resp_umol_hr_indiv)~ pCO2_parents*pCO2_offspring, data = RR_master_outlierOM))
+shapiro.test(resid(aov_mod_outlierOM)) # 0.3301
+leveneTest(aov_mod_outlierOM) # 0.706
+hist(resid(aov_mod_outlierOM)) # left skew
 
-summary(aov_mod_SQRT)
+summary(aov_mod_outlierOM)
 #                              Df    Sum Sq   Mean Sq F value Pr(>F)
-# pCO2_parents                 1 1.495e-05 1.495e-05   1.809  0.192
-# pCO2_offspring               2 4.070e-06 2.036e-06   0.246  0.784
-# pCO2_parents:pCO2_offspring  2 1.206e-05 6.029e-06   0.729  0.493
+# pCO2_parents                 1 1.399e-09 1.399e-09   2.243  0.145
+# pCO2_offspring               2 1.016e-09 5.078e-10   0.814  0.453
+# pCO2_parents:pCO2_offspring  2 9.720e-10 4.862e-10   0.780  0.468
+# Residuals                   28 1.747e-08 6.237e-10
 
 aov_mod_parents <- aov(lm(resp_umol_hr_indiv~ pCO2_parents, data = RR_master))
 summary(aov_mod_parents)
+
+
+
+RR_master_800uatm_parents <- RR_master %>%  dplyr::filter(pCO2_parents %in% "800 uatm") %>% dplyr::filter(!resp_umol_hr_indiv > 0.0002) 
+aov_mod_800uatmParents <- aov(lm(resp_umol_hr_indiv~ pCO2_offspring, data = RR_master_800uatm_parents))
+shapiro.test(resid(aov_mod_800uatmParents)) # 0.2078
+leveneTest(aov_mod_800uatmParents) # 0.5813
+summary(aov_mod_800uatmParents)
+
+aov_mod_800uatmParents_SQRT <- aov(lm(sqrt(resp_umol_hr_indiv)~ pCO2_offspring, data = RR_master_800uatm_parents))
+shapiro.test(resid(aov_mod_800uatmParents_SQRT)) # 0.3995
+leveneTest(aov_mod_800uatmParents_SQRT) # 0.824
+summary(aov_mod_800uatmParents_SQRT)
+
 
 ```
 
@@ -89,15 +105,17 @@ BOXPLOT_Parentxoffsrping <- RR_master %>%
   dplyr::filter(!resp_umol_hr_indiv > 0.0002) %>% 
   ggplot(aes(x = factor(pCO2_parents), 
              y = resp_umol_hr_indiv, 
-             fill = pCO2_offspring)) +
-         geom_boxplot(alpha = 0.5, # color hue
+             colour = pCO2_offspring,
+             fill = pCO2_parents)) +
+         geom_boxplot(alpha = 0.5,  # color hue
              width=0.6, # boxplot width
              outlier.size=0, # make outliers small
              position = position_dodge(preserve = "single")) + 
          geom_point(pch = 19, 
                     position = position_jitterdodge(0.01), 
                     size=1) +
-         scale_fill_manual(values=c("forestgreen","orange", "purple")) +
+         scale_fill_manual(values=c("white", "grey75")) +
+         scale_colour_manual(values=c("forestgreen","orange", "purple")) +
          theme_classic() + 
          ggtitle("Respiration rates - Dhinge larvae") +
          theme(axis.title.y=element_text(size=7),
@@ -127,7 +145,8 @@ BOXPLOT_Parent <- RR_master %>%
          geom_point(pch = 19, 
                     position = position_jitterdodge(0.01), 
                     size=1) +
-         scale_fill_manual(values=c("forestgreen","orange")) +
+         scale_fill_manual(values=c("white", "grey75")) +
+         #scale_colour_manual(values=c("forestgreen","orange")) +
          theme_classic() + 
          ggtitle("Respiration rates - Dhinge larvae") +
          xlab("Respiration rates - Dhinge larvae") +
@@ -142,6 +161,7 @@ BOXPLOT_Parent <- RR_master %>%
                       size=0.4, 
                       linetype = "dashed", 
                       position = position_dodge(preserve = "single")) 
+
 
 pdf(paste0(filename = "C:/Users/samjg/Documents/Github_repositories/Airradians_parentXoffspring_OA/RAnalysis/Output/Respiration/RR_Boxplots.pdf"), width = 8, height = 8)
 ggarrange(BOXPLOT_Parent, BOXPLOT_Parentxoffsrping, nrow = 2)

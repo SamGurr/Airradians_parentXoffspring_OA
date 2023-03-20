@@ -81,15 +81,15 @@ write.csv(blanks_all_raw, "C:/Users/samjg/Documents/Github_repositories/Airradia
 # mean blanks for the LoLinR output ('Lpc') ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 blanks_means <- blanks_all_raw %>% 
-                       dplyr::filter(!(Filename == 'SDR_799_resp_Plate1.csv' & Channel %in% c('B3', 'D4'))) %>% 
+                       dplyr::filter(!(Filename == 'SDR_799_resp_Plate1.csv' & Channel %in% c('B3', 'D3', 'D4'))) %>% 
                        dplyr::filter(!(Filename == 'SDR_873_resp_Plate2.csv' & Channel %in% ('C5'))) %>% 
                        dplyr::filter(!(Filename == 'SDR_979_resp_Plate3.csv' & Channel %in% c('D1', 'D4', 'D5'))) %>% 
                        dplyr::group_by(Date, pH_offspring, Run, filetype) %>% # grouped by date, pH, and instrument - similar among Run
                        #dplyr::filter(Lpc <0) %>% # ommit blank calls that d/n represent oxygen consumption
                        dplyr::mutate(Lpc = case_when(Lpc > 0 & Lpc < 0.005 ~ 0,TRUE ~ Lpc)) %>% #  when LPC is positive but veery close to zero - assign as zero
                        dplyr::summarise(BLANK.mean_Lpc = mean(abs(Lpc)), n = n()) %>% 
-                        dplyr::mutate(Date_formatted =  gsub("-", "", substr( (strptime(Date, "%m/%d/%Y")), 1,10)) ) %>% 
-                        dplyr::arrange(Date_formatted, Run, pH_offspring)
+                       dplyr::mutate(Date_formatted =  gsub("-", "", substr( (strptime(Date, "%m/%d/%Y")), 1,10)) ) %>% 
+                       dplyr::arrange(Date_formatted, Run, pH_offspring)
 
 write.csv(blanks_means, "C:/Users/samjg/Documents/Github_repositories/Airradians_parentXoffspring_OA/RAnalysis/Output/Respiration/RR_blanks_means.csv")
 
@@ -159,7 +159,7 @@ Resp.Master_OM <- Resp.Master %>%
                   ))
 # diagnostics..
 Resp.outliers <- Resp.Master %>% dplyr::filter(resp_blankStand < 0) # call negatives - 14
-
+nrow(Resp.outliers) # 14
 write.csv(Resp.outliers, "C:/Users/samjg/Documents/Github_repositories/Airradians_parentXoffspring_OA/RAnalysis/Output/Respiration/RR_bad_data.csv")
 
 ```
